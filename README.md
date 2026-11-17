@@ -17,8 +17,6 @@ Projeto de **Arquitetura de Computadores II (AED N2)** – PUC Goiás – **Grup
 | `results/resultados_codespaces.csv` | Resultados reais medidos no GitHub Codespaces (gerado pelo programa) |
 | `docs/relatorio.md` | Modelo do relatório: ambiente, tabelas, análise |
 | `README.md` | Este guia |
-| `.gitignore` | Evita enviar executáveis ao Git |
-| `LICENSE` | Licença MIT |
 
 ## Como o código funciona
 
