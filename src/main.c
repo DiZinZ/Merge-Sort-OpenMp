@@ -25,10 +25,32 @@
 #include <string.h>
 #include <omp.h>
 #include "merge_sort.h"
+#ifdef _WIN32
+#include <windows.h>   /* para acentos corretos no terminal do Windows */
+#endif
 
 #define N_PADRAO      240000   /* 24 letras dos nomes x 10.000 */
 #define REPS_PADRAO   10
 #define SEMENTE       12345u   /* semente fixa: mesmo vetor em todas as execuções */
+
+/* Imprime os integrantes e o cálculo de N (exigido pela atividade).
+   Quantidade de letras escrita à mão, pois os nomes têm acentos. */
+static void imprimir_identificacao(long n_usado) {
+    const char *nomes[] = {"Dillan", "Lázaro", "Kauá", "Leonardo"};
+    const int letras[]  = {6, 6, 4, 8};
+    int total = 0;
+    printf("Grupo 6 - Arquitetura de Computadores II (AED N2) - PUC Goiás\n");
+    printf("Integrantes (primeiro nome = letras):\n");
+    for (int i = 0; i < 4; i++) {
+        printf("  %s = %d\n", nomes[i], letras[i]);
+        total += letras[i];
+    }
+    printf("Total de letras = %d  ->  N = %d x 10.000 = %d elementos\n",
+           total, total, total * 10000);
+    if (n_usado != (long)total * 10000)
+        printf("ATENÇÃO: N usado nesta execução (%ld) difere do N do grupo.\n", n_usado);
+    printf("\n");
+}
 
 /* Imprime no terminal as informações do ambiente (copie para o relatório). */
 static void imprimir_ambiente(const char *ambiente, long n, int reps) {
@@ -57,6 +79,9 @@ static FILE *abrir_csv(const char *caminho) {
 }
 
 int main(int argc, char **argv) {
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);   /* mostra "á", "ç" etc. corretamente */
+#endif
     long n = N_PADRAO;
     int reps = REPS_PADRAO;
     int lista_threads[16] = {1, 2, 4, 8};
@@ -98,9 +123,15 @@ int main(int argc, char **argv) {
     }
     preencher_aleatorio(original, n, SEMENTE);
 
+    imprimir_identificacao(n);
     imprimir_ambiente(ambiente, n, reps);
 
     /* ---- Tempo sequencial (mesma base para todas as quantidades de threads) ---- */
+    /* Aquecimento (NÃO medido): a primeira execução paga o custo de tocar a memória
+       pela primeira vez (page faults) e de "acordar" a CPU, o que inflaria T_seq. */
+    memcpy(seq, original, (size_t)n * sizeof(int));
+    ordenar_sequencial(seq, tmp, n);
+
     double soma_seq = 0.0;
     int ok_seq = 1;
     for (int r = 0; r < reps; r++) {
@@ -111,6 +142,7 @@ int main(int argc, char **argv) {
         if (!esta_ordenado(seq, n)) ok_seq = 0;
     }
     double tempo_seq = soma_seq / reps;
+    printf("\n(Cada medição é precedida por 1 execução de aquecimento, não contada.)");
     printf("\nSequencial: tempo medio = %.6f s | ordenado = %s\n", tempo_seq, ok_seq ? "SIM" : "NAO");
 
     FILE *csv = NULL;
@@ -128,6 +160,10 @@ int main(int argc, char **argv) {
         int t = lista_threads[c];
         double soma_par = 0.0;
         int ok_par = 1, iguais = 1;
+
+        /* Aquecimento (NÃO medido): cria as threads e prepara o escalonador de tasks. */
+        memcpy(par, original, (size_t)n * sizeof(int));
+        ordenar_paralelo(par, tmp, n, t);
 
         for (int r = 0; r < reps; r++) {
             memcpy(par, original, (size_t)n * sizeof(int));

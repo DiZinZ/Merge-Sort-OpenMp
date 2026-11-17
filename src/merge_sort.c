@@ -20,17 +20,44 @@ void preencher_aleatorio(int *v, long n, unsigned int semente) {
 /* ===================== Funções internas (static) ===================== */
 
 /*
+ * ANÁLISE DE DEPENDÊNCIAS DE DADOS (relatório, seção 3)
+ *   RAW = leitura depois de escrita (dependência verdadeira)
+ *   WAR = escrita depois de leitura (dependência de nome / anti-dependência)
+ *   WAW = escrita depois de escrita (dependência de nome / de saída)
+ * Os comentários [RAW-n], [WAR-n] e [WAW-n] abaixo apontam cada ocorrência.
+ */
+
+/*
  * intercalar
  * Junta duas metades já ordenadas, [lo, mid) e [mid, hi), em uma só.
- * Compara o menor elemento de cada metade e copia para tmp; depois
- * copia o resultado de volta para a.
+ * Copia os menores elementos para tmp e depois copia tmp de volta para a.
  */
 static void intercalar(int *a, int *tmp, long lo, long mid, long hi) {
     long i = lo, j = mid, k = lo;
+
+    /* [RAW-1] Este trecho LÊ a[lo..hi), escrito pelas duas chamadas recursivas
+     *         das metades. A intercalação só pode começar depois delas.
+     * [RAW-2] i, j e k são lidos e escritos a cada volta: a volta seguinte usa
+     *         o valor que a anterior escreveu, e a escolha do próximo elemento
+     *         depende de i e j. Por isso este laço é SEQUENCIAL.
+     * [WAR-2] a[i] <= a[j] LÊ i e j; logo depois i++ ou j++ os ESCREVE
+     *         (dependência de nome em escalares, resolvida com registradores).
+     * [WAW-2] tmp[k] só é escrito na faixa [lo, hi) deste trecho. Faixas de
+     *         trechos diferentes não se cruzam, então duas tasks nunca
+     *         escrevem na mesma posição de tmp.
+     */
     while (i < mid && j < hi)
         tmp[k++] = (a[i] <= a[j]) ? a[i++] : a[j++];
     while (i < mid) tmp[k++] = a[i++];
     while (j < hi)  tmp[k++] = a[j++];
+
+    /* [RAW-3] memcpy LÊ tmp[lo..hi), escrito pelos laços acima.
+     * [WAR-1] memcpy ESCREVE em a[lo..hi) depois que os laços LERAM a[i] e a[j];
+     *         copiar antes destruiria valores ainda não lidos.
+     * [WAW-1] a[lo..hi) já foi escrito pelas intercalações das metades; esta
+     *         cópia o ESCREVE de novo, e a ordem das escritas precisa ser
+     *         mantida (o pai escreve por último).
+     */
     memcpy(a + lo, tmp + lo, (size_t)(hi - lo) * sizeof(int));
 }
 
@@ -49,8 +76,13 @@ static void merge_sort_seq(int *a, int *tmp, long lo, long hi) {
 
 /*
  * merge_sort_par
- * Mesma lógica da versão sequencial, mas cada metade vira uma TASK OpenMP,
- * que qualquer thread livre pode executar.
+ * Mesma lógica da versão sequencial, mas cada metade vira uma TASK OpenMP.
+ *
+ * O QUE PODE SER PARALELO: as duas metades. Uma lê e escreve só em a[lo..mid)
+ * e tmp[lo..mid); a outra, só em a[mid..hi) e tmp[mid..hi). Os conjuntos de
+ * leitura e escrita são disjuntos: NÃO há RAW, WAR nem WAW entre as duas tasks.
+ *
+ * O QUE É SEQUENCIAL: a intercalação (RAW-1, RAW-2, RAW-3, WAR-1, WAW-1).
  */
 static void merge_sort_par(int *a, int *tmp, long lo, long hi) {
     if (hi - lo < 2) return;
@@ -66,7 +98,9 @@ static void merge_sort_par(int *a, int *tmp, long lo, long hi) {
     #pragma omp task                         /* metade direita = outra tarefa */
     merge_sort_par(a, tmp, mid, hi);
 
-    #pragma omp taskwait                     /* espera as duas antes de intercalar */
+    /* taskwait respeita [RAW-1] e [WAW-1]: o pai só intercala e escreve em
+     * a[lo..hi) depois que as duas tasks filhas terminaram. */
+    #pragma omp taskwait
     intercalar(a, tmp, lo, mid, hi);
 }
 
