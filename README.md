@@ -115,30 +115,3 @@ Em todas as execuções o vetor ficou ordenado e idêntico ao resultado sequenci
 
 O computador local é cerca de 33% mais rápido no sequencial e escala bem melhor (speedup máximo 3,59 contra 1,50 no Codespaces), principalmente porque tem 24 processadores lógicos contra 2. Detalhes e limitações em `docs/relatorio.md`.
 
-## Git e GitHub (passo a passo)
-
-1. **Criar o repositório (site github.com):** *New repository* → nome `grupo6-merge-sort-openmp` → marque *Add README* só se for começar do zero (aqui, não) → *Create*.
-2. **Clonar (terminal do seu PC, na pasta onde quer o projeto):**
-   ```bash
-   git clone https://github.com/SEU_USUARIO/grupo6-merge-sort-openmp.git
-   cd grupo6-merge-sort-openmp
-   code .        # abre no VS Code
-   ```
-   No Codespaces: página do repositório → **Code → Codespaces → Create codespace on main**.
-3. **Adicionar/editar arquivos:** copie as pastas deste projeto para dentro do repositório clonado e edite no VS Code.
-4. **Configurar identidade (uma vez por máquina):**
-   ```bash
-   git config --global user.name "Seu Nome"
-   git config --global user.email "seu@email.com"
-   ```
-5. **Salvar com Git (commit):**
-   ```bash
-   git status
-   git add .
-   git commit -m "Adiciona Merge Sort sequencial e paralelo com OpenMP"
-   ```
-6. **Enviar:** `git push origin main`
-7. **Atualizar (antes de começar a trabalhar e antes do push, principalmente se mais de uma pessoa edita):** `git pull origin main`
-
-Fluxo recomendado entre os dois ambientes: rode no Windows → `git add/commit/push` do CSV local → no Codespaces `git pull` → rode lá → `git add/commit/push` do CSV do Codespaces → no Windows `git pull`.
-
