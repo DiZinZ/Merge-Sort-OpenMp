@@ -19,7 +19,6 @@ Projeto de **Arquitetura de Computadores II (AED N2)** – PUC Goiás – **Grup
 | `docs/img/` | Prints reais das execuções e gráfico de speedup |
 | `README.md` | Este guia |
 | `.gitignore` | Evita enviar executáveis ao Git |
-| `LICENSE` | Licença MIT |
 
 ## Como o código funciona
 
