@@ -1,38 +1,144 @@
-# Relatório – Merge Sort Sequencial e Paralelo com OpenMP
+# Análise de Desempenho do Algoritmo Merge Sort Sequencial e Paralelo com OpenMP em C
 
-**Disciplina:** Arquitetura de Computadores II (AED N2) – PUC Goiás – Grupo 6
+Projeto de **Arquitetura de Computadores II (AED N2)** – PUC Goiás – **Grupo 6**
+
 **Integrantes:** Dillan Fernandes de Almeida Silva, Lázaro Mateus Quixabeira Santos, Kauá dos Santos Leão, Leonardo Anacleto Maciel
-**N:** 240.000 elementos (24 letras × 10.000)
 
-## 1. Ambientes de teste
-*(Preencher com os comandos de hardware do README. Não use valores presumidos.)*
+**Tamanho do vetor:** 6 + 6 + 4 + 8 = 24 letras → N = 24 × 10.000 = **240.000 elementos**.
 
-| Item | Local (Windows 11) | GitHub Codespaces |
-|---|---|---|
-| Processador | | |
-| Núcleos / threads lógicas | | |
-| Memória RAM | | |
-| Versão do GCC / OpenMP | | |
+## Estrutura do repositório
 
-## 2. Metodologia
-Merge Sort sequencial e paralelo (OpenMP tasks, cutoff = 5000). Vetor gerado com semente fixa, média de 10 repetições com `omp_get_wtime()`, verificação de ordenação e de igualdade entre versões.
+| Caminho | Função |
+|---|---|
+| `src/main.c` | Programa principal: lê as opções, mede os tempos, calcula speedup/eficiência/Amdahl e grava o CSV |
+| `src/merge_sort.h` | Interface (declarações e descrição de cada função) da parte de ordenação |
+| `src/merge_sort.c` | Implementação do Merge Sort sequencial e paralelo (OpenMP) e das verificações |
+| `results/resultados_local.csv` | Resultados reais medidos no Windows 11 (gerado pelo programa) |
+| `results/resultados_codespaces.csv` | Resultados reais medidos no GitHub Codespaces (gerado pelo programa) |
+| `docs/relatorio.md` | Modelo do relatório: ambiente, tabelas, análise |
+| `README.md` | Este guia |
+| `.gitignore` | Evita enviar executáveis ao Git |
+| `LICENSE` | Licença MIT |
 
-## 3. Resultados
-*(Copie os valores de `results/*.csv`.)*
+## Como o código funciona
 
-| Ambiente | Threads | T_seq (s) | T_par (s) | Speedup | Eficiência | p (Amdahl) |
-|---|---|---|---|---|---|---|
-| | 1 | | | | | n/a |
-| | 2 | | | | | |
-| | 4 | | | | | |
-| | 8 | | | | | |
+- **Organização:** `merge_sort.h/.c` guardam a ordenação e as verificações; `main.c` cuida só de opções, tempos, cálculos e CSV.
+- **Sequencial:** `merge_sort_seq` divide o vetor ao meio, ordena cada metade e intercala (`intercalar`).
+- **Paralelo:** `merge_sort_par` faz o mesmo, mas cada metade vira uma `#pragma omp task`; `#pragma omp taskwait` espera as duas antes de intercalar. Em `ordenar_paralelo`, `#pragma omp parallel` cria as threads e `#pragma omp single` faz com que apenas uma delas inicie a recursão (as outras executam as tasks).
+- **CUTOFF (5000):** abaixo desse tamanho a recursão volta ao modo sequencial, pois criar tasks minúsculas custa mais do que ganha.
+- **Verificações:** `esta_ordenado` confere a ordem; `sao_iguais` compara o resultado sequencial com o paralelo.
+- **Medição:** `omp_get_wtime()`, média de várias repetições (padrão 10). A mesma entrada (semente fixa) é usada em todas as execuções.
+- **Cálculos:** Speedup = T_seq / T_par; Eficiência = Speedup / threads; Amdahl: p = (1 − 1/S) / (1 − 1/t), para t > 1.
 
-## 4. Análise
-- O paralelismo melhorou o desempenho? Em quantas threads o speedup parou de crescer?
-- A eficiência caiu com mais threads? Por quê (sobrecarga de tasks, merge final sequencial, memória)?
-- Quantos processadores lógicos o ambiente realmente tinha? Threads acima disso não trazem ganho.
-- Fração paralelizável estimada (Amdahl) e speedup máximo teórico 1/(1−p).
-- Diferenças entre Windows local e Codespaces.
+## Compilar e executar
 
-## 5. Conclusão
-*(Escrever após analisar os resultados reais.)*
+### Linux / GitHub Codespaces
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y build-essential
+gcc --version
+echo | gcc -fopenmp -dM -E - | grep -i _OPENMP     # deve mostrar #define _OPENMP ...
+
+gcc -O2 -fopenmp -Wall -Wextra -o merge_sort src/main.c src/merge_sort.c
+./merge_sort -a codespaces -o results/resultados_codespaces.csv
+```
+
+Registre o hardware do Codespaces (cole no relatório):
+```bash
+nproc
+lscpu | grep -E "Model name|^CPU\(s\)|Thread|Core|Socket|MHz"
+free -h
+cat /etc/os-release | head -2
+```
+
+### Windows 11 (MSYS2 + GCC)
+1. Instale o MSYS2 (PowerShell): `winget install MSYS2.MSYS2`
+2. Abra **MSYS2 UCRT64** e rode:
+```bash
+pacman -Syu
+pacman -S --needed mingw-w64-ucrt-x86_64-toolchain
+```
+3. Instale o Git no Windows, se necessário: `winget install Git.Git`.
+4. Adicione `C:\msys64\ucrt64\bin` ao PATH do Windows e reabra o VS Code/terminal. Se `gcc --version` mostrar uma versão antiga (ex.: MinGW.org 6.3.0), coloque o GCC novo na frente nesta sessão com `$env:Path = "C:\msys64\ucrt64\bin;" + $env:Path`.
+5. No terminal do VS Code (PowerShell), dentro da pasta do projeto (se os acentos aparecerem errados, rode `chcp 65001` antes):
+```powershell
+gcc --version
+gcc -O2 -fopenmp -Wall -Wextra -o merge_sort.exe src/main.c src/merge_sort.c
+.\merge_sort.exe -a local -o results/resultados_local.csv
+```
+Hardware no Windows:
+```powershell
+Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed
+Get-CimInstance Win32_ComputerSystem | Select-Object @{n="RAM_GB";e={[math]::Round($_.TotalPhysicalMemory/1GB,1)}}
+```
+
+### Opções do programa
+`-n N` (padrão 240000) · `-r REPS` (padrão 10) · `-t 1,2,4,8` · `-a ambiente` · `-o arquivo.csv` (acrescenta linhas; cria o cabeçalho se o arquivo estiver vazio).
+
+> **Dica:** feche programas pesados durante a medição e rode o teste mais de uma vez. Se rodar de novo no mesmo CSV, as linhas são acrescentadas; apague o conteúdo (mantendo o cabeçalho) para recomeçar.
+
+## Resultados
+
+Tempos reais medidos com `omp_get_wtime()` (média de 10 repetições, N = 240.000). Os dados completos estão em `results/` e a análise em `docs/relatorio.md`.
+
+### GitHub Codespaces
+
+Hardware: AMD EPYC 7763 64-Core Processor, **2 processadores lógicos** (1 núcleo físico, 2 threads por núcleo), 7,8 GiB de RAM, GCC 13.3.0 (Ubuntu 24.04), OpenMP 4.5.
+
+| Threads | T_seq (s) | T_par (s) | Speedup | Eficiência | p (Amdahl) |
+|---|---|---|---|---|---|
+| 1 | 0,021005 | 0,020707 | 1,014 | 1,014 | n/a |
+| 2 | 0,021005 | 0,014390 | 1,460 | 0,730 | 0,630 |
+| 4 | 0,021005 | 0,014030 | 1,497 | 0,374 | 0,443 |
+| 8 | 0,021005 | 0,016976 | 1,237 | 0,155 | 0,219 |
+
+Em todas as execuções o vetor ficou ordenado e idêntico ao resultado sequencial.
+
+**Resumo:** com 2 threads o tempo caiu cerca de 31,5%. Com 4 threads o ganho é praticamente o mesmo, e com 8 threads piora, pois o ambiente tem só 2 processadores lógicos e as threads em excesso competem entre si. A estimativa mais confiável da fração paralelizável é p ≈ 0,63 (2 threads).
+
+### Local (Windows 11)
+
+Hardware: AMD Ryzen 9 5900X 12-Core, **12 núcleos / 24 processadores lógicos**, 31,9 GB de RAM, GCC 16.2.0 (MSYS2 UCRT64), OpenMP 5.1.
+
+| Threads | T_seq (s) | T_par (s) | Speedup | Eficiência | p (Amdahl) |
+|---|---|---|---|---|---|
+| 1 | 0,014000 | 0,013700 | 1,022 | 1,022 | n/a |
+| 2 | 0,014000 | 0,007600 | 1,842 | 0,921 | 0,914 |
+| 4 | 0,014000 | 0,005300 | 2,642 | 0,660 | 0,829 |
+| 8 | 0,014000 | 0,003900 | 3,590 | 0,449 | 0,824 |
+
+Em todas as execuções o vetor ficou ordenado e idêntico ao resultado sequencial.
+
+**Resumo:** o tempo cai em todas as etapas (72% menor com 8 threads, speedup 3,59), pois o computador tem processadores lógicos de sobra. A fração paralelizável estimada é p ≈ 0,82.
+
+### Comparação
+
+O computador local é cerca de 33% mais rápido no sequencial e escala bem melhor (speedup máximo 3,59 contra 1,50 no Codespaces), principalmente porque tem 24 processadores lógicos contra 2. Detalhes e limitações em `docs/relatorio.md`.
+
+## Git e GitHub (passo a passo)
+
+1. **Criar o repositório (site github.com):** *New repository* → nome `grupo6-merge-sort-openmp` → marque *Add README* só se for começar do zero (aqui, não) → *Create*.
+2. **Clonar (terminal do seu PC, na pasta onde quer o projeto):**
+   ```bash
+   git clone https://github.com/SEU_USUARIO/grupo6-merge-sort-openmp.git
+   cd grupo6-merge-sort-openmp
+   code .        # abre no VS Code
+   ```
+   No Codespaces: página do repositório → **Code → Codespaces → Create codespace on main**.
+3. **Adicionar/editar arquivos:** copie as pastas deste projeto para dentro do repositório clonado e edite no VS Code.
+4. **Configurar identidade (uma vez por máquina):**
+   ```bash
+   git config --global user.name "Seu Nome"
+   git config --global user.email "seu@email.com"
+   ```
+5. **Salvar com Git (commit):**
+   ```bash
+   git status
+   git add .
+   git commit -m "Adiciona Merge Sort sequencial e paralelo com OpenMP"
+   ```
+6. **Enviar:** `git push origin main`
+7. **Atualizar (antes de começar a trabalhar e antes do push, principalmente se mais de uma pessoa edita):** `git pull origin main`
+
+Fluxo recomendado entre os dois ambientes: rode no Windows → `git add/commit/push` do CSV local → no Codespaces `git pull` → rode lá → `git add/commit/push` do CSV do Codespaces → no Windows `git pull`.
+
