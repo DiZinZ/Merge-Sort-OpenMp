@@ -18,7 +18,6 @@ Projeto de **Arquitetura de Computadores II (AED N2)** – PUC Goiás – **Grup
 | `docs/relatorio.md` / `docs/relatorio.pdf` | Relatório nos 8 itens da atividade, com dependências RAW/WAR/WAW, paralelização, resultados e EXTRA-EXTRA |
 | `docs/img/` | Prints reais das execuções e gráfico de speedup |
 | `README.md` | Este guia |
-| `.gitignore` | Evita enviar executáveis ao Git |
 
 ## Como o código funciona
 
