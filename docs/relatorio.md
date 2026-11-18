@@ -102,7 +102,7 @@ static void intercalar(int *a, int *tmp, long lo, long mid, long hi) {
 - um único `tmp`, indexado com as mesmas posições de `a`, evita WAW-2 sem precisar de cópias extras;
 - `CUTOFF` de 5.000 elementos: abaixo desse tamanho a ordenação é sequencial, porque criar tasks muito pequenas custa mais do que ganha.
 
-**Ligação com os capítulos do semestre** (numeração do documento da atividade):
+**Ligação com o livro Arquitetura e Organização de Computadores - 8ª Ed - William Stallings dos capítulos**:
 
 - **Caps. 14 e 16 (paralelismo em nível de instrução):** RAW, WAR e WAW são os mesmos conflitos de dados vistos nesses capítulos. RAW é dependência verdadeira e não pode ser eliminada, como o `taskwait` e o laço de intercalação. WAR e WAW são dependências de nome e podem ser eliminadas por renomeação, como o uso de faixas separadas de `tmp`.
 - **Cap. 17 (processamento paralelo):** as tasks distribuem subproblemas independentes entre processadores que compartilham a mesma memória, no estilo MIMD com memória compartilhada.
