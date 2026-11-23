@@ -7,7 +7,7 @@
  * Análise de Desempenho do Algoritmo Merge Sort Sequencial e Paralelo com OpenMP em C
  * Arquitetura de Computadores II (AED N2) - PUC Goiás - Grupo 6
  *
- * Compilar (Linux / Codespaces / MSYS2 no Windows):
+ * Compilar:
  *     gcc -O2 -fopenmp -Wall -Wextra -o merge_sort src/main.c src/merge_sort.c
  *
  * Executar (padrão: N = 240000, 10 repetições, threads 1,2,4,8):
@@ -33,7 +33,7 @@
 #define REPS_PADRAO   10
 #define SEMENTE       12345u   /* semente fixa: mesmo vetor em todas as execuções */
 
-/* Imprime os integrantes e o cálculo de N (exigido pela atividade).
+/* Imprime os integrantes e o cálculo de N .
    Quantidade de letras escrita à mão, pois os nomes têm acentos. */
 static void imprimir_identificacao(long n_usado) {
     const char *nomes[] = {"Dillan", "Lázaro", "Kauá", "Leonardo"};
